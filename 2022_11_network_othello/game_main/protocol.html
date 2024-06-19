@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>実験C-7 リバーシの手プロトコル version 0.2.0 仕様</title>
+  <link rel="stylesheet" href="c7.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">実験C-7 リバーシの手プロトコル version 0.2.0 仕様</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#リクエスト" id="toc-リクエスト">リクエスト</a>
+<ul>
+<li><a href="#moveリクエスト"
+id="toc-moveリクエスト">MOVEリクエスト</a></li>
+<li><a href="#quitリクエスト"
+id="toc-quitリクエスト">QUITリクエスト</a></li>
+<li><a href="#noopリクエスト"
+id="toc-noopリクエスト">NOOPリクエスト</a></li>
+</ul></li>
+<li><a href="#レスポンス" id="toc-レスポンス">レスポンス</a>
+<ul>
+<li><a href="#moveリクエストに対するレスポンス"
+id="toc-moveリクエストに対するレスポンス">MOVEリクエストに対するレスポンス</a></li>
+<li><a href="#noopリクエストへのレスポンス"
+id="toc-noopリクエストへのレスポンス">NOOPリクエストへのレスポンス</a></li>
+</ul></li>
+<li><a href="#例" id="toc-例">例</a></li>
+</ul>
+</nav>
+<section class="main">
+<p id="last_updated">
+最終更新：令和3年9月6日(月)
+</p>
+<p id="author">
+文責：松田 一孝
+</p>
+<ul id="LINKS">
+<li>
+<a href="./index.html">実験要領</a>
+</li>
+<li>
+<a href="./setup.html">環境の準備</a>
+</li>
+<li>
+<a
+href="./connection_via_ssh_forwarding.html">教育用計算機を介した通信</a>
+</li>
+<li>
+<a href="./socket.html">ソケットプログラミング</a>
+</li>
+<li class="current">
+<a href="./protocol.html">“リバーシの手”プロトコル</a>
+</li>
+</ul>
+<p>実験C-7 リバーシの手プロトコル（Jikken C-7 Reversi-Move Protocol;
+以下C7RMP）は実験C-7において，リバーシ（日本ではオセロの名で知られる）の対戦を行うために設計されたプロトコルである．C7RMPでは，クライアントはサーバに盤面と手番（白もしくは黒）の情報を送り，サーバはその盤面においてその手番の合法手を返す．これを繰り返すことにより，対戦を実現する．ただし，リバーシ対戦を実現するためには，クライアントはリバーシのルールに従い適切に次の手をサーバに問い合わせる必要がある．サーバはステートレスであり，問い合わされた盤面において次の手を返すこと以外は行わない．</p>
+<figure>
+<img src="communication.png"
+alt="通信のイメージ（ページ下部の「例」も参照）" />
+<figcaption
+aria-hidden="true">通信のイメージ（ページ下部の「例」も参照）</figcaption>
+</figure>
+<p>リバーシのルールそのものについては本稿では解説をしない．</p>
+<h2 id="リクエスト">リクエスト</h2>
+<p>クライアントは3種類のリクエストをサーバに送ることができる．一つは<em>MOVEリクエスト</em>であり，これは次の手をサーバに問い合わせるために利用される．一つは<em>QUITリクエスト</em>であり，サーバとの通信を終了するのに用いられる．残りの一つは，<em>NOOPリクエスト</em>である．これはサーバとの接続を確認する意図で利用可能である．</p>
+<p>リクエストの構文について述べる．構文の定義にはaugmented BNF (<a
+href="https://tools.ietf.org/html/rfc5234">RFC
+5234</a>)を用いる．利便性のため</p>
+<pre><code>SP    = %x20 ; &quot; &quot; in ASCII
+CRLF  = %x0D %x0A</code></pre>
+<p>という非終端記号を導入しておく．前述の通り，リクエスト（<code>request</code>）はMOVEリクエスト（<code>move-request</code>），QUITリクエスト（<code>quit-request</code>），あるいはNOOPリクエスト（<code>noop-request</code>）のいずれかである．</p>
+<pre><code>request = move-request / quit-request / noop-request</code></pre>
+<p>以下，それぞれのリクエストについて，その構文とともに説明する．</p>
+<h3 id="moveリクエスト">MOVEリクエスト</h3>
+<p>MOVEリクエストはサーバに次の手を問い合わせる．構文は</p>
+<pre><code>move-request = move-command SP board-value SP turn CRLF
+move-command = %x4D %x4F %x56 %x45 ; &quot;MOVE&quot; in ASCII</code></pre>
+<p>の形をしている．board-valueおよびturnの構文は以下の通りである．</p>
+<pre><code>board-value = 64disk
+disk        = &quot;-&quot;   ; empty
+            / turn  
+turn = %x58 ; &quot;X&quot; in ASCII
+     / %x47 ; &quot;O&quot; in ASCII</code></pre>
+<p>すなわち，board-valueは<code>"-"</code>（空白），<code>%x58</code>（黒石），<code>%x47</code>（白石）からなる64
+bytesの文字列である．これは，左上から右下まで左から順に石を並べたものである．</p>
+<p>また，turnは<code>%x58</code>（黒石）ならば，サーバが黒番として次の手を打つべきであること，<code>%x47</code>（白石）ならば，サーバが白番として次の手を打つべきであることを示している．</p>
+<p>たとえば，MOVEリクエスト</p>
+<pre><code>MOVE ---------------------------OX------XXX-------------------------- O\r\n</code></pre>
+<p>は，以下の盤面において白の手を返せという問い合わせを表す．</p>
+<pre><code>  ABCDEFGH
+1 --------
+2 --------
+3 --------
+4 ---OX---
+5 ---XXX--
+6 --------
+7 --------
+8 --------</code></pre>
+<p>なお，MOVEリクエストのサイズは厳密に73 bytesとなる．</p>
+<h3 id="quitリクエスト">QUITリクエスト</h3>
+<p>QUITリクエストは通信の終了を意味する．このリクエストを送信したクライアントおよびリクエストを受けとったサーバは，このリクエストが送信された接続をただちに閉じる．</p>
+<p>QUITリクエストの構文は以下の通りである．</p>
+<pre><code>quit-request = quit-command CRLF
+quit-command = %x51 %x55 %x49 %x54; QUIT in ASCII</code></pre>
+<p>QUITリクエストの長さは厳密に6 bytesである．</p>
+<h3 id="noopリクエスト">NOOPリクエスト</h3>
+<p>NOOPリクエストは，接続の確認のために利用できる．</p>
+<pre><code> noop-request = noop-command CRLF
+ noop-command = %x4E %x4F %x4F %x50 ; &quot;NOOP&quot; in ASCII</code></pre>
+<h2 id="レスポンス">レスポンス</h2>
+<p>C7RGPでは，サーバはMOVEリクエストに対しては手を返さねればならず，NOOPリクエストに対しては”OK”を返さねばらない．そして，QUITリクエストに対してはレスポンスを返すことなく接続を閉じなければならない．</p>
+<pre><code>response = response-to-move / response-to-noop</code></pre>
+<h3
+id="moveリクエストに対するレスポンス">MOVEリクエストに対するレスポンス</h3>
+<p>MOVEリクエストに対しては，サーバは送信された盤面と手番における「次の手」を以下の形で返す．</p>
+<pre><code>response-to-move = move CRLF</code></pre>
+<p>ここで，moveは</p>
+<pre><code>move       = pass / valid-move
+pass       = %x58 %x58 ; &quot;XX&quot; in ASCII
+valid-move = x-axis y-axis
+x-axis     = %x41-%x48 ; &quot;A&quot; to &quot;H&quot; in ASCII
+y-axis     = %x31-%x38 ; &quot;1&quot; to &quot;8&quot; in ASCII</code></pre>
+<p>という形をしていて，パス（<code>pass</code>）もしくは具体的な手（<code>valid-move</code>）を表す．具体的な手は以下のように盤面上の座標を表す．</p>
+<pre><code>  ABCDEFGH
+1 --------
+2 --------
+3 --------
+4 ---OX---
+5 ---XXX--
+6 --------
+7 --------
+8 --------</code></pre>
+<p>リバーシでは，パスは合法手がないときにのみ許されている．クライアントは合法手がない手をサーバに問い合わせるのは避けるべきである．</p>
+<p>たとえば，</p>
+<pre><code>MOVE ---------------------------OX------XXX-------------------------- O\r\n</code></pre>
+<p>を受けとったサーバは</p>
+<pre><code>F6\r\n</code></pre>
+<p>や</p>
+<pre><code>D6\r\n</code></pre>
+<p>などのレスポンスをクライアントに返すであろう．また，</p>
+<pre><code>MOVE ---------------------------XX------XXX-------------------------- O\r\n</code></pre>
+<p>が送られてきたならば，ルールにしたがってプレイするサーバならば</p>
+<pre><code>XX\r\n</code></pre>
+<p>というレスポンスをクライアントに返すことになる．</p>
+<h3 id="noopリクエストへのレスポンス">NOOPリクエストへのレスポンス</h3>
+<p>NOOPリクエストに対しては，サーバは以下のレスポンスを返さなければならない．</p>
+<pre><code>response-to-noop = ok CRLF
+ok = %x4F %x4B ; &quot;OK&quot; in ASCII</code></pre>
+<h2 id="例">例</h2>
+<p>本プロトコルに従ったクライアントとサーバの通信の例を以下に示す．</p>
+<pre><code>リクエスト: MOVE ---------------------------OX------XO--------------------------- X\r\n
+レスポンス: D3\r\n
+リクエスト: MOVE -------------------XO------XO------XO--------------------------- X\r\n
+レスポンス: F6\r\n
+リクエスト: MOVE -------------------XO------XO------XO-------OX------------------ X\r\n
+レスポンス: F2\r\n
+リクエスト: MOVE -------------X----OXX------OO------XO-------OX------------------ X\r\n
+レスポンス: C5\r\n
+リクエスト: MOVE -------------X----OXX------XO-----XOO-----O-OX------------------ X\r\n
+レスポンス: D6\r\n
+...
+リクエスト: MOVE O-XXXXXXOOXXOOXXOOOOOOOXXOXOXXOXXOOXOOOOXOXOXX-OXXOXXXXXXXX-OO-X X\r\n
+レスポンス: D8\r\n
+リクエスト: MOVE O-XXXXXXOOXXOOXXOOOOOOOXXOOOXXOXXOOOOOOOXXXOOX-OXXXXXOXXXXXXOOOX X\r\n
+レスポンス: G6\r\n
+リクエスト: QUIT</code></pre>
+<p>この通信の例では，黒番の手をサーバに問い合わせてゲーム進行を行っている．<code>G6\r\n</code>というレスポンスを受けとった時点での盤面は</p>
+<pre><code>  ABCDEFGH
+1 O-XXXXXX
+2 OOXXOOXX
+3 OOOOOOXX
+4 XOOOXXXX
+5 XOOOOXXO
+6 XXXOOXXO
+7 XXXXXOXX
+8 XXXXOOOX</code></pre>
+である．このリバーシのルールに従うと，この盤面に対し白はB1石を置くしかない．その後は置く場所がないため，クライアントはサーバとの通信を<code>QUIT</code>にて終了している．最終的には黒石36個，白石54個で白勝ちである．
+</section>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>教育用計算機を介した端末間の通信（sshポートフォワーディング）</title>
+  <link rel="stylesheet" href="c7.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">教育用計算機を介した端末間の通信（sshポートフォワーディング）</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#ローカルポートフォワーディング"
+id="toc-ローカルポートフォワーディング">ローカルポートフォワーディング</a></li>
+<li><a href="#リモートポートフォワーディング"
+id="toc-リモートポートフォワーディング">リモートポートフォワーディング</a></li>
+<li><a href="#二者を組み合わせる"
+id="toc-二者を組み合わせる">二者を組み合わせる</a></li>
+</ul>
+</nav>
+<section class="main">
+<p id="last_updated">
+最終更新：令和4年10月03日(水)
+</p>
+<p id="author">
+文責：松田 一孝
+</p>
+<ul id="LINKS">
+<li>
+<a href="./index.html">実験要領</a>
+</li>
+<li>
+<a href="./setup.html">環境の準備</a>
+</li>
+<li class="current">
+<a
+href="./connection_via_ssh_forwarding.html">教育用計算機を介した通信</a>
+</li>
+<li>
+<a href="./socket.html">ソケットプログラミング</a>
+</li>
+<li>
+<a href="./protocol.html">“リバーシの手”プロトコル</a>
+</li>
+</ul>
+<p>現在では，同じローカルネットワークに接続するマシンであっても，そのネットワークが不特定多数の人間を許すようであればマシン同士の通信はまずできない．（一方で，家庭内等の信頼できる人のみが利用するネットワークでは可能である場合がある．）ところで，弊学のwifiもそのようなネットワークであるし，教育用計算機も特定の目的で利用するポート以外は学内からのアクセスも遮断されている．</p>
+<p>つまり，<em>何も対策しなければ</em>本実験において友達同士で通信を行うことができないことになってしまう．一方で，ネットワークプログラミングの実験としては是非，異なるマシン同士での通信を実施してほしい．その一つの対策が
+ssh ポートフォーワディングである．</p>
+<p>sshポートフォワーディングを行うと，sshでログインするサーバ（ここでは教育用計算機）を介して以下のことができる．
+*
+自分のマシンの指定のポートへのアクセスを，教育用計算機から指定の接続先の指定のポートにアクセスに転送する（<strong>ローカルポートフォワーディング</strong>）．
+*
+教育用計算機からの指定のポートへのアクセスを，自分のマシンの指定の接続先の指定のポートへのアクセスに転送する（<strong>リモートポートフォワーディング</strong>）．</p>
+<p>さらに，これを組み合わせることで</p>
+<pre><code>マシンA：ポート60000 ----&gt; 教育用計算機：ポート61111 ----&gt; マシンB：ポート62222</code></pre>
+<p>と教育用計算機を介してマシンAとマシンBが，あたかも同じマシンであるかのように通信できる（<code>60000</code>等のポート番号は他と競合しなければなんでもよい）．</p>
+<p>なお，教育用計算機は学内から <code>eilinux.ecei.tohoku.ac.jp</code>
+でアクセスできる．アカウントの本実験の受講者には配布する予定である．</p>
+<h2
+id="ローカルポートフォワーディング">ローカルポートフォワーディング</h2>
+<pre class=".shell"><code>ssh -L PORT1:DESTINATION:PORT2 ACCOUNT@eilinux.ecei.tohoku.ac.jp -N</code></pre>
+<p>とすると（<code>ACCOUNT</code>の部分は自分のアカウント名に置きかえる），自分のマシン（<code>localhost</code>）のポート<code>PORT1</code>が教育用計算機（<code>eilinux.ecei.tohoku.ac.jp</code>）からの<code>DESTINATION</code>の<code>PORT2</code>にフォワードされる（つまり，<code>localhost</code>の<code>PORT1</code>にアクセスすると教育用計算機上で<code>DESTINATION</code>の<code>PORT2</code>にアクセスしたことになる）．</p>
+<p>なので，たとえば教育用計算機でエコーサーバを<code>60001</code>ポートで動かしているときに，<strong>自分のマシン</strong>で</p>
+<pre class="shell"><code>ssh -L 60000:localhost:60001 ACCOUNT@eilinux.ecei.tohoku.ac.jp -N </code></pre>
+<p>をすると，</p>
+<pre class="shell"><code>./echo_client localhost 60000</code></pre>
+<p>や</p>
+<pre class="shell"><code>telnet localhost 60000</code></pre>
+<p>を実行することで教育用計算機で動くそのサーバと接続することができる．</p>
+<h2
+id="リモートポートフォワーディング">リモートポートフォワーディング</h2>
+<pre class=".shell"><code>ssh -R PORT1:DESTINATION:PORT2 ACCOUNT@eilinux.ecei.tohoku.ac.jp -N</code></pre>
+<p>を実行することで，教育用計算機からの<code>DESTINATION</code>の<code>PORT1</code>へのアクセスを自分のマシンのポート<code>PORT2</code>へのアクセスへフォワードすることができる．</p>
+<p>なので，たとえば自分のマシンで</p>
+<pre class="shell"><code>ssh -R 60000:localhost:60001 sdXXXXX@eilinux.ecei.tohoku.ac.jp -N </code></pre>
+<p>を実行し，またエコーサーバをポート<code>60000</code>で立ち上げたとする．</p>
+<p>そうすると，教育用計算機上で</p>
+<pre class="shell"><code>./echo_client localhost 60001</code></pre>
+<p>や</p>
+<pre class="shell"><code>telnet localhost 60001</code></pre>
+<p>を実行することであなたのマシンで動くサーバと通信することができる．</p>
+<h2 id="二者を組み合わせる">二者を組み合わせる</h2>
+<p>ローカルポートフォワーディングを使うと自分のPCへのアクセスをサーバからのアクセスに置き換えることができ，リモートポートフォワーディングを使うとサーバからのアクセスを自分のPCへのアクセスに置き換えることができる．</p>
+<p>なので，たとえばAさんが</p>
+<pre class="shell"><code>ssh -L 60000:localhost:61111 ACCOUNT@eilinux.ecei.tohoku.ac.jp -N </code></pre>
+<p>を実行しBさんが</p>
+<pre class="shell"><code>ssh -R 61111:localhost:62222 ACCOUNT@eilinux.ecei.tohoku.ac.jp -N </code></pre>
+<p>を実行することで，Aさんのマシンのポート<code>60000</code>が教育用計算機ポート<code>61111</code>を経由してBさんのマシンのポート<code>62222</code>ヘフォワードされるようになる．</p>
+<p>なので，Bさんがたとえば</p>
+<pre><code>./echo_server 62222</code></pre>
+<p>でエコーサーバを起動したとすると，Aさんはそのサーバに</p>
+<pre><code>./echo_client localhost 60000</code></pre>
+<p>とすることで接続できるようになる．</p>
+</section>
+</body>
+</html>

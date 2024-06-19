@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>環境の準備</title>
+  <link rel="stylesheet" href="c7.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">環境の準備</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#環境の整備windows-cygwin-簡単"
+id="toc-環境の整備windows-cygwin-簡単">環境の整備：Windows (Cygwin;
+簡単)</a>
+<ul>
+<li><a href="#手順1cygwinのインストール"
+id="toc-手順1cygwinのインストール">手順1：Cygwinのインストール</a></li>
+<li><a href="#手順2java環境の準備"
+id="toc-手順2java環境の準備">手順2：Java環境の準備</a></li>
+<li><a href="#手順3オプショナル"
+id="toc-手順3オプショナル">手順3（オプショナル）</a></li>
+</ul></li>
+<li><a href="#環境の整備windows-wsl"
+id="toc-環境の整備windows-wsl">環境の整備：Windows (WSL)</a>
+<ul>
+<li><a href="#手順1ubuntuのインストール"
+id="toc-手順1ubuntuのインストール">手順1：Ubuntuのインストール</a></li>
+<li><a href="#手順2c環境とjava実行環境の準備"
+id="toc-手順2c環境とjava実行環境の準備">手順2：C環境（とJava実行環境）の準備</a></li>
+<li><a href="#手順4オプショナルvscodeのインストール"
+id="toc-手順4オプショナルvscodeのインストール">手順4（オプショナル）：VSCodeのインストール</a></li>
+</ul></li>
+<li><a href="#環境の整備mac-os"
+id="toc-環境の整備mac-os">環境の整備：Mac OS</a>
+<ul>
+<li><a href="#手順1xcode-command-line-toolsのインストール"
+id="toc-手順1xcode-command-line-toolsのインストール">手順1：Xcode
+command-line toolsのインストール</a></li>
+<li><a href="#手順2homebrewのインストール"
+id="toc-手順2homebrewのインストール">手順2：Homebrewのインストール</a></li>
+<li><a href="#手順3telnetのインストール"
+id="toc-手順3telnetのインストール">手順3：<code>telnet</code>のインストール</a></li>
+<li><a href="#手順4java開発環境のインストール"
+id="toc-手順4java開発環境のインストール">手順4：Java開発環境のインストール</a></li>
+<li><a href="#手順5doxygenのインストール"
+id="toc-手順5doxygenのインストール">手順5：doxygenのインストール</a></li>
+<li><a href="#手順6オプショナル"
+id="toc-手順6オプショナル">手順6（オプショナル）</a></li>
+</ul></li>
+</ul>
+</nav>
+<section class="main">
+<p id="last_updated">
+最終更新：令和4年10月06日(木)
+</p>
+<p id="author">
+文責：松田 一孝
+</p>
+<ul id="LINKS">
+<li>
+<a href="./index.html">実験要領</a>
+</li>
+<li class="current">
+<a href="./setup.html">環境の準備</a>
+</li>
+<li>
+<a
+href="./connection_via_ssh_forwarding.html">教育用計算機を介した通信</a>
+</li>
+<li>
+<a href="./socket.html">ソケットプログラミング</a>
+</li>
+<li>
+<a href="./protocol.html">“リバーシの手”プロトコル</a>
+</li>
+</ul>
+<p>本実験はUnix系のOSで行うことを想定している．
+こちらではWindows/Macユーザ向けに自分のPC使用時の環境設定方法について述べる．ここに書いてあるのは唯一の方法というわけではなく，2022年9月時点での<em>無難な方法</em>という立場である．ここに記した方法以外にも，たとえば直にあるいはVirtualBoxやVMware
+Workstation Playerなどの仮想マシンモニタ上でLinuxやFree
+BSDをインストール・設定してもよい．</p>
+<!-- 
+なお，環境の準備においては，Emacsのインストール方法についても触れている．これは，Emacsを使うことを要請あるいは推奨しているわけではなく，何らかのエディタ/IDEが使える状態にあるようにするためである．VSCodeやEclipseなどの他のエディタ/IDEを（きちんと設定して）使える人はもちろんEmacsをインストールしなくてもよい．Emacsはユーザが適切に設定を書くことによって様々なカスタマイズや機能追加を行える強力なエディタ/IDEであるが，デフォルトのままだと使いやすいとはいいがたいところがあるので，他のエディタ/IDEに慣れている人はむしろそちらを使ったほうがよいかもしれない．ただし，エディタ/IDEの設定については基本的に本実験のサポート外であることに留意する． -->
+<div class="caution">
+<p><a
+href="./reversi-net.jar">参照用プログラム</a>の実行にはJava実行環境（JRE）が必要であるため，Javaの実行環境（JRE）をインストールする必要がある．</p>
+</div>
+<!-- ## VPNの設定 -->
+<!-- [感染拡大防止のための学生用VPN](https://www.tains.tohoku.ac.jp/contents/remote/vpnstudent.html)の各システム向けの設定マニュアル（[Windows 10](https://www.tains.tohoku.ac.jp/contents/uploads/student_sstp-win10.pdf)，[Mac OS](https://www.tains.tohoku.ac.jp/contents/uploads/student_l2tp-macos.pdf)）に従ってVPNを設定する． -->
+<!-- <\!-- 本実験でTAINS VPNを利用する目的は，このVPNを利用するマシン同士がローカルネットワークに存在するマシンであるかように通信を行うことができるようにするためである． -\-> -->
+<!-- 教育用計算機には学内からしかアクセスできないので，VPNを利用することで自宅からアクセスすることができるようになる． -->
+<!-- 通常はファイアウォール等のため，同じローカルネットワーク内のコンピュータ同士でない限りは自分のPCで立てたサーバに他の人がアクセスすることができない（いわゆる「自宅サーバ」と同じ苦労とリスクがいる）．そのため，本実験では教育用計算機を介して通信を行うことにする． -->
+<!-- 負荷軽減のため，実験に関する接続を行うとき以外はVPNに接続しないように． -->
+<!-- ## 環境の整備：Windows (Chocolatey)
+
+Windows用のパッケージマネージャ [Chocolatey](https://chocolatey.org/) を使った方法．
+
+### 手順1：Chocolateyのインストール
+
+Chocolateyの[Install](https://chocolatey.org/install#individual)ページに行き，"Now run the following commad"の下のボックスにあるものをPowerShellにコピー&ペーストして実行する．2022/09/30日現在は内容は以下の通り．
+
+```
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
+
+同ページには`Get-ExecutionPolicy`が`Restricted`なら…といったことが書かれているが，上記のコマンドに`Set-ExecutionPolicy`が含まれているので不要なはず．
+
+インストールが終了したら，以下のコマンドを実行してみる．
+
+```
+choco
+```
+
+### 手順2：C環境の準備
+
+PowerShellを管理者権限で実行して，以下を実行する．
+
+```
+choco install mingw make doxygen.install
+```
+
+### 手順3：実験で使用するコマンドラインプログラムの入手
+
+```
+choco install telnet
+```
+
+### 手順4（オプショナル）:エディタのインストール
+
+ソースコードエディタには好きなものを使ってよいが，[VSCode](https://code.visualstudio.com/)は一つの選択肢か． -->
+<h2 id="環境の整備windows-cygwin-簡単">環境の整備：Windows (Cygwin;
+簡単)</h2>
+<p><a
+href="https://www.cygwin.com/">Cygwin</a>を使うとWindows上に簡単にUnix環境を構築できる．ただ，一部の処理が遅かったり，特定のUnixをターゲットにしているようなコードは結局コンパイルできなかったりするので，その後より積極的にUnix環境を使いたいならばWSLを使うことを検討されたし．</p>
+<h3 id="手順1cygwinのインストール">手順1：Cygwinのインストール</h3>
+<p><a href="https://www.cygwin.com/install.html">Cygwin
+Installation</a>のページから，<a
+href="https://www.cygwin.com/setup-x86_64.exe"><code>setup-x86_64.exe</code></a>を入手し，実行する．</p>
+<p>インストール途中で，パッケージを選択する画面が出てくるので，<code>gcc-core</code>，<code>make</code>，<code>doxygen</code>，<code>inetutils</code>を選択する．
+その後インストールを進め，完了させる．</p>
+<p>インストールが成功すると，デスクトップに<code>Cygwin64 Terminal</code>なるアイコンが表示される．</p>
+<h4 id="ヒント">ヒント</h4>
+<ul>
+<li><p>Cygwin上のパスをWindows上のパスに変換するには，<code>cygpath</code>を使用する．たとえば，</p>
+<pre><code>cygpath -w .</code></pre>
+<p>を実行してみよう．</p></li>
+<li><p>Cygwin上でカレントディレクトリでエクスプローラを使いたときは，</p>
+<pre><code>cygstart . </code></pre>
+<p>とする．大雑把には<code>cygstart</code>は「開く」を実行するコマンドであり，引数のファイルの拡張子により適切なアプリケーションを起動する．</p></li>
+<li><p><code>C</code>ドライブはCygwin上では<code>/cygrive/c/</code>としてアクセスできる．なので，たとえば，<code>C:\Users\kztk</code>
+はCygwin上だと<code>/cygdrive/c/Users/kztk/</code>としてアクセスできる．</p></li>
+<li><p>インストールするパッケージを追加したり，アップデートしたりしたいときは，上記で入手したインストーラを実行する．</p></li>
+</ul>
+<h3 id="手順2java環境の準備">手順2：Java環境の準備</h3>
+<p><a href="https://www.microsoft.com/openjdk">Microsoft Build of
+OpenJDK</a>を使うのが楽であろう．</p>
+<ol type="1">
+<li>当該ページの「Download」をクリックし，遷移先のページからWindows用の.msiファイルをダウンロードする．</li>
+<li>ダウンロードした .msiファイルを実行し，インストールする．</li>
+</ol>
+<h3 id="手順3オプショナル">手順3（オプショナル）</h3>
+<p>好きなエディタをインストールして使おう．</p>
+<h2 id="環境の整備windows-wsl">環境の整備：Windows (WSL)</h2>
+<p>以下は最低限必要なもののみについて記述する．</p>
+<p>本実験はunix環境を想定しているため，Windowsで実験を遂行する場合はWindows
+Subsystems for Linuxを用いるのが一つの方法である．</p>
+<h3 id="手順1ubuntuのインストール">手順1：Ubuntuのインストール</h3>
+<h4
+id="コマンドラインを用いたインストール">コマンドラインを用いたインストール</h4>
+<p>比較的新しいWindows 10（version
+2004以降）を利用しているのならば，PowerShellかコマンドプロンプトから</p>
+<pre><code>wsl --install</code></pre>
+<p>を実行すればよい．…と<a
+href="https://docs.microsoft.com/ja-jp/windows/wsl/install">Microsoftのサイトには書いてある</a>が私（松田）が2021年に試してみたところうまく行かなかったので，ひょっとしたら，</p>
+<pre><code>wsl --install -d Ubuntu</code></pre>
+<p>のようにディストリビューション名を指定する必要があるかもしれない．入ったLinuxがWSL
+1で動くかWSL 2で動くかは</p>
+<pre><code>wsl -l -v </code></pre>
+<p>で確認できる（「VERSION」の列を見る）．ちなみに，インストールしたディストリビューションのWSLのバージョンの変更は</p>
+<pre><code>wsl --set-version Ubuntu 2</code></pre>
+<p>のようにすることで可能である（この例だと<code>Ubuntu</code>のWSLのバージョンを2にする）．</p>
+<h4 id="旧来の手順">旧来の手順</h4>
+<p>上記のコマンドラインからのインストールがうまく行かなければ，以下を実行する．</p>
+<ol type="1">
+<li>「設定」→「アプリ」→「アプリと機能」→「プログラムと機能」（右上）→「Windowsの機能の有効化または無効化」とすすみ，開いたウィンドウにて「Linux用Windowsサブシステム」にチェックをつけ「OK」を押す．
+<ul>
+<li><p>WSL 1でなくWSL
+2を使用したいのならば「仮想マシンプラットフォーム」と「Windows
+ハイパーバイザー プラットフォーム」も有効にし，
+下記の再起動後，PowerShellかコマンドプロンプトから</p>
+<pre><code>wsl --set-default-version 2</code></pre>
+<p>を実行する．</p></li>
+</ul></li>
+<li>Windowsの再起動が求められるので再起動する．</li>
+<li>「Microsoft
+Store」（スタートメニューから見つかるはず）を起動し，”Ubuntu”を検索する．「Ubuntu」というのが見つかるはず</li>
+<li>「入手」をクリックし，ダウンロードする
+<ul>
+<li>Microsoftアカウントが必要</li>
+</ul></li>
+<li>「Ubuntu」を起動する（スタートメニューから見つかるはず）
+<ul>
+<li>ユーザ名とパスワードを適切に設定する</li>
+</ul></li>
+<li>これでUbuntuがインストールされる</li>
+</ol>
+<div class="caution">
+<p>WSL
+2だと，特別な設定がなければ，Linux側はWindows側と同一のネットワークに接続されるわけではなく（つまり，ブリッジ接続はされない），
+Windows側とのみ接続された仮想的なネットワーク上のマシンという扱いになる（一段階入れ子になる）．
+<!-- なので，Windows側が外から見える場合もLinux側は見えないので注意が必要である． -->
+<!-- が，自宅で実験を進めているのならば，そもそもWindows側が外から見えるようになっていないので特にこのことが支障になることはないだろう．しかし， -->
+たとえば友人と同一ネットワークにWindowsマシンを接続して，さあ通信してみようとしてもWSL
+2上のLinux側<strong>へ</strong>（Linux側<strong>から</strong>は問題ない）は（特別な設定なしには）接続できないことになる．</p>
+</div>
+<!-- ### 手順2：Xの設定 -->
+<!-- 上記Ubuntu上でGUIアプリケーションを実行したい場合は設定すること．以下の人は飛ばしてもよい． -->
+<!--    * ターミナル上でEmacsやVimを使ったので十分という剛の者 -->
+<!--    * エディタの設定に詳しくたとえばVSCodeからWSL上のファイルを編集できるように設定できる人（VSCodeだと拡張機能入れるだけなので，こっちのほうが実際には簡単かもしれない） -->
+<!-- #### Windows用Xサーバの入手・設定 -->
+<!-- 1. フリーのXサーバであるVcXsrvを入手 -->
+<!--     1. [https://sourceforge.net/projects/vcxsrv/](https://sourceforge.net/projects/vcxsrv/) にアクセスし「ダウンロード」する -->
+<!--     2. ダウンロードしたインストーラを起動し，適切にダイアログに従いインストールする -->
+<!-- 2. なにもオプションを変更せずにインストールした場合，「XLaunch」というショートカットがデスクトップに追加されるので，それを起動する -->
+<!--     * 起動時にいろいろ聞かれるが，WSL 2を利用している場合はAdditional parameters for VcXsrvに`-ac`を入力する． -->
+<!--       他については，この実験については何も変更をする必要はない． -->
+<!--       （なお，毎回起動時に入力する必要がある） -->
+<!-- WSLのバージョンを確認するにはコマンドプロンプトかPowerShellから`wsl -l -v`を実行すればよい． -->
+<!-- #### WSL上のUbuntu側の設定 -->
+<!-- （WSL 1の場合） -->
+<!-- 1. 「Ubuntu」を起動する（スタートメニューから見つかるはず）  -->
+<!--     * ターミナルが出てくる -->
+<!-- 2. ターミナル上で，`export DISPLAY=:0.0`を実行する． -->
+<!-- 3. 後のため`echo "export DISPLAY=:0.0" >> ~/.bashrc`も実行する -->
+<!-- 4. 動作確認（飛ばしてもOK） -->
+<!--     1. `sudo apt install x11-apps`する -->
+<!--         * パスワードを聞かれるが，それはUbuntuを最初に設定したときのパスワードであり，Windowsのパスワードではない． -->
+<!--     2. `xeyes`を実行する．マウスカーソルを向く目玉が表示されたらOK -->
+<!-- （WSL 2の場合） -->
+<!-- 1. 「Ubuntu」を起動する（スタートメニューから見つかるはず）  -->
+<!--     * ターミナルが出てくる -->
+<!-- 2. ターミナル上で，以下を実行する． -->
+<!--         export DISPLAY=`hostname`.mshome.net:0.0 -->
+<!-- 3. 後のため，以下も実行する（要は前で実行した内容を`.bashrc`に追加すればよい）．バッククォートとシングルクォートの違いに注意する（下記には両方含まれている）． -->
+<!--         echo 'export DISPLAY=`hostname`.mshome.net:0.0' >> ~/.bashrc  -->
+<!-- 4. 動作確認（飛ばしてもOK） -->
+<!--     1. `sudo apt install x11-apps`する -->
+<!--     2. `xeyes`を実行する．マウスカーソルを向く目玉が表示されたらOK -->
+<!-- 5. うまく行かない場合ファイアウォールが悪さをしている可能性があるので，[適当](https://www.google.com/search?q=windows+firewall+vcsrv)にファイアウォールの設定を変更する． -->
+<!-- <div class="caution"> -->
+<!-- 最初に，あるいはしばらくぶりに`apt`を実行する前には，`sudo apt update`を実行するとよい．そうでなければパッケージが見付からない旨のエラーが出る場合がある．その後は`sudo apt upgrade`を行うとよい（特に`sudo apt update`の後に実行が促される場合）． -->
+<!-- </div> -->
+<h3
+id="手順2c環境とjava実行環境の準備">手順2：C環境（とJava実行環境）の準備</h3>
+<ul>
+<li>以下のコマンドを実行する</li>
+</ul>
+<pre><code>sudo apt install gcc make doxygen default-jre</code></pre>
+<!-- * （Java用）以下のコマンドを実行する -->
+<!-- ``` -->
+<!-- sudo apt install default-jdk ant -->
+<!-- ``` -->
+<div class="caution">
+<p>最初に，あるいはしばらくぶりに<code>apt</code>を実行する前には，<code>sudo apt update</code>を実行するとよい．そうでなければパッケージが見付からない旨のエラーが出る場合がある．その後は<code>sudo apt upgrade</code>を行うとよい（特に<code>sudo apt update</code>の後に実行が促される場合）．</p>
+</div>
+<!-- ### 手順4（オプショナル）：Emacsのインストール -->
+<!-- 以下を実行する． -->
+<!-- ``` -->
+<!-- sudo apt install emacs -->
+<!-- ``` -->
+<h3
+id="手順4オプショナルvscodeのインストール">手順4（オプショナル）：VSCodeのインストール</h3>
+<p>VSCodeを使うとWindows側からWSL側のファイルを編集できるので便利であろう．なお，VSCodeをインストールするのは<em>Windows側である</em>ことに注意．</p>
+<ol type="1">
+<li><a
+href="https://code.visualstudio.com/">VSCodeの公式ページ</a>からインストーラを入手し，その指示に従ってインストールする</li>
+<li>拡張機能 <a
+href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack">Remote
+Development</a> をインストールする．</li>
+</ol>
+<p>起動する場合は<em>WSL側から</em>適当なフォルダの中で</p>
+<pre><code>code . </code></pre>
+<p>などとする．</p>
+<h2 id="環境の整備mac-os">環境の整備：Mac OS</h2>
+<p>同様に以下は最低限必要なもののみについて記述する．</p>
+<h3 id="手順1xcode-command-line-toolsのインストール">手順1：Xcode
+command-line toolsのインストール</h3>
+<ol type="1">
+<li><code>Xcode</code>をApp Storeから入手する（11
+GB超あることに注意）</li>
+<li>「ターミナル.app」（「アプリケーション」→「ユーティリティ」にある）を開き，以下のコマンドを実行する．</li>
+</ol>
+<pre><code>xcode-select --install</code></pre>
+<p>これで，<code>make</code>や<code>gcc</code>が使えるようになるはず（注意：ここでインストールされる<code>gcc</code>は本物の<a
+href="https://gcc.gnu.org/">gcc</a>ではなく中身は<a
+href="https://clang.llvm.org/"><code>clang</code></a>である）．</p>
+<h3 id="手順2homebrewのインストール">手順2：Homebrewのインストール</h3>
+<p><a href="https://brew.sh/">https://brew.sh/</a> （日本語：<a
+href="https://brew.sh/index_ja">https://brew.sh/index_ja</a>）の指示にしたがって
+Homebrewをインストールする</p>
+<h3
+id="手順3telnetのインストール">手順3：<code>telnet</code>のインストール</h3>
+<p>以下のコマンドを実行する</p>
+<pre><code>brew install telnet</code></pre>
+<h3
+id="手順4java開発環境のインストール">手順4：Java開発環境のインストール</h3>
+<p>HomebrewはJava実行環境のみのパッケージを提供していないので（2020年10月23日現在），Java開発環境をインストール必要がある．</p>
+<!-- 1. [OracleのJDKのダウンロードページ](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html#license-lightbox) から，Java SE Development Kit 8を入手し，インストールする -->
+<!--     * ここでJava SE Development Kit 8のダウンロードを挙げているのは，教育用計算機環境のJava Runtime Environmentのバージョンが8なため． -->
+<!-- 2. 以下のコマンドを実行する -->
+<p>以下のコマンドを実行する．</p>
+<pre><code>brew install openjdk</code></pre>
+<p>上記のコマンドの実行途中で<code>openjdk</code>のインストール終了時点で下記のようなメッセージが表示される（あくまで以下は私の環境実行した場合のものである）</p>
+<pre><code>For the system Java wrappers to find this JDK, symlink it with
+  sudo ln -sfn /usr/local/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk
+
+openjdk is keg-only, which means it was not symlinked into /usr/local,
+because it shadows the macOS `java` wrapper.
+
+If you need to have openjdk first in your PATH run:
+  echo &#39;export PATH=&quot;/usr/local/opt/openjdk/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc
+
+For compilers to find openjdk you may need to set:
+  export CPPFLAGS=&quot;-I/usr/local/opt/openjdk/include&quot;</code></pre>
+<p>なかでもとりわけ重要なのは<code>PATH</code>の設定である．もしzshを使っているのならば，表示されたメッセージにある通り，コマンド</p>
+<pre><code>echo &#39;export PATH=&quot;/usr/local/opt/openjdk/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc</code></pre>
+<p>を実行する．終わったあとは</p>
+<pre><code>source ~/.zshrc</code></pre>
+<p>も実行する．</p>
+<!-- <div class="caution"> -->
+<!-- この方法でインストールした`ant`はJavaの環境としてbrewで依存関係によりinstallされたopenjdkのほうを参照するが，これがコマンドラインから`java`や`javac`でアクセスできるJavaの環境（OracleのJDK）と異なる場合がある．その問題を避けるために，`JAVA_HOME`を適切に設定するとよい． -->
+<!-- たとえば，`which java`を実行すると私の環境だと`/usr/bin/java`と返ってきて，それはOracleのJDKへのリンクである．なので，`.bashrc`（bashを使っている場合）や`.zshrc`（zshを使っている場合）等に -->
+<!-- ``` -->
+<!-- export JAVA_HOME=/usr/bin -->
+<!-- ``` -->
+<!-- を追加するとよい． -->
+<!-- </div> -->
+<!-- もちろん，[Eclipse](https://www.eclipse.org/downloads/)を使ってもらってもかまわない（AntもJDKも同梱されているはず）． -->
+<!-- その場合は「既存のソースコードからのプロジェクトの作成方法」についての知識が求められる． -->
+<!-- ここからCを使う場合とJavaを使う場合で分岐． -->
+<h3 id="手順5doxygenのインストール">手順5：doxygenのインストール</h3>
+<p>以下のコマンドを実行する．</p>
+<pre><code>brew install doxygen</code></pre>
+<h3 id="手順6オプショナル">手順6（オプショナル）</h3>
+<p>好きなエディタをインストールしよう．</p>
+<!-- ### 手順5（Java用）：antのインストール -->
+<!-- 以下のコマンドを実行する． -->
+<!-- ``` -->
+<!-- brew install ant -->
+<!-- ``` -->
+<!-- ### 手順6（オプショナル）：Emacsのインストール -->
+<!-- もちろん好きなエディタを使ってもかまわないが，プログラミング演習Bでも使ったEmacsが使いたい人は以下を実行して新しいEmacsをインストールするとよい（なお，Mac OSに標準でEmacsが付いてくるのだが，その版は古いしターミナル上でしか使えない）． -->
+<!-- ``` -->
+<!-- brew cask install emacs -->
+<!-- ``` -->
+<!-- ## 教育用計算機へのログイン方法 -->
+<!-- 自分のマシンに環境を構築するよりも不便かもしれないが，教育用計算機へログインした上で実験を遂行することも可能である． -->
+<!-- 以下の情報は上野先生の許可を得て，[プログラミング演習B（2020年）：サポートページ](https://www.ecei.tohoku.ac.jp/~progb/)（当時）より転載したものである． -->
+<!-- <blockquote> -->
+<!-- <p>ログイン先のサーバーは以下の3台あります．どのサーバーにログインしても同じ環境です．</p> -->
+<!-- <ul> -->
+<!-- <li>eiw01.ec.ecei.tohoku.ac.jp</li> -->
+<!-- <li>eiw02.ec.ecei.tohoku.ac.jp</li> -->
+<!-- <li>eiw03.ec.ecei.tohoku.ac.jp</li> -->
+<!-- </ul> -->
+<!-- <p>まずサイコロを振り，どのサーバーにログインするかをランダムに決めてください．決めたサーバーを<i>server</i>とします．</p> -->
+<!-- <p>あなたの教育用計算機のアカウント名を確認してください．<code>sd</code>から始まるはずです．アカウント名を<i>user</i>とします．</p> -->
+<!-- <p>次に，Windowsでは「PowerShell」を，Macでは「ターミナル」を起動し，以下のコマンドを入力，実行してください．</p> -->
+<!-- <ul><li><code>ssh </code><i>user</i><code>@</code><i>server</i></li></ul> -->
+<!-- <p>例えば，<code>sd00000</code>さんが<code>eiw01.ec.ecei.tohoku.ac.jp</code>にログインするには，以下のコマンドを実行します．</p> -->
+<!-- <ul><li><code>ssh sd00000@eiw01.ec.ecei.tohoku.ac.jp</code></li></ul> -->
+<!-- <p>サーバーへの接続に成功すると，初回接続に限り，以下のような質問が出ます．</p> -->
+<!-- <pre> -->
+<!-- The authenticity of host 'eiw01.ec.ecei.tohoku.ac.jp (130.34.195.11)' can't be established. -->
+<!-- ECDSA key fingerprint is SHA256:1aJHQlJCEnV9GaFgjfef26uavX/te7sIceKZ+Cc6i84. -->
+<!-- Are you sure you want to continue connecting (yes/no/[fingerprint])? -->
+<!-- </pre> -->
+<!-- <p><code>ECDSA key fingerprint is SHA256:...</code>以降の記号列は接続先サーバーごとに異なります．<code>SHA256:</code>以降の記号列が以下の記号列と一致していることを目視で確認してください．一致している場合は<code>yes</code>と答えてください．一致しない場合は（何らかの攻撃を受けている可能性が高いので）質問に答えずに操作をただちに中止してください．</p> -->
+<!-- <table border="1"> -->
+<!-- <tbody> -->
+<!-- <tr><th>接続先サーバー</th><th>鍵指紋</th></tr> -->
+<!-- <tr><td>eiw01.ec.ecei.tohoku.ac.jp</td><td><code>1aJHQlJCEnV9GaFgjfef26uavX/te7sIceKZ+Cc6i84</code></td></tr> -->
+<!-- <tr><td>eiw02.ec.ecei.tohoku.ac.jp</td><td><code>b2BwnIDwnUbuTlOE6eS7bPEBkOSvdyKW2oa9sPGItiM</code></td></tr> -->
+<!-- <tr><td>eiw03.ec.ecei.tohoku.ac.jp</td><td><code>DUXDQE/jATlX4OrdGP9QY8CmyewEdG8VC1MhcOJ/Y10</code></td></tr> -->
+<!-- </tbody> -->
+<!-- </table> -->
+<!-- <p>上記の質問に続き，パスワードを聞かれます．</p> -->
+<!-- <pre>Password:</pre> -->
+<!-- <p>演習室アカウントのパスワードを入力してください．なお，パスワード入力中はキー入力をしても何も表示されません．</p> -->
+<!-- <p>正確にパスワードを入力しログインできた場合は以下のようなメッセージとプロンプトが表示されます．</p> -->
+<!-- <pre> -->
+<!-- Last login: Wed Apr 22 14:01:12 2020 from XXX.XXX.XXX.XXX -->
+<!-- [sd00000@eiw01 ~]$ -->
+<!-- </pre> -->
+<!-- <p>ログアウトするには，<code>logout</code>と入力してください．</p> -->
+<!-- </blockquote> -->
+<!-- また，教育用計算機サーバへのファイルのコピーについては： -->
+<!-- <blockquote> -->
+<!-- <p>scpコマンドを使ってください．例えば，<code>sd00000</code>さんが<code>eiw02.ec.ecei.tohoku.ac.jp</code>のホームディレクトリにファイル<code>hoge.sml</code>をコピーする場合，PowerShellまたはターミナルで以下のコマンドを実行します．</p> -->
+<!-- <ul><li><code>scp hoge.sml sd0000@eiw02.ec.ecei.tohoku.ac.jp:</code></li></ul> -->
+<!-- <p>Windowsを使っている場合の注意：日本語で名前が付けられたフォルダ内のファイルをscpコマンドでコピーすることはできません．フォルダ名を英文字で付け直してください．</p> -->
+<!-- </blockquote> -->
+<!-- 転載ここまで． -->
+<!-- ## Javaのバージョンに関する注意 -->
+<!-- 実行に使用するJREのメジャーバージョンよりも，コンパイルに使用したJDKのメジャーバージョンのほうが新しい場合，生成物を実行できないことがある． -->
+<!-- <\!-- 複数のバージョンのJavaが同居しているような環境（たとえば，OpenJDKとOracleのJDKを両方入れたり，Eclipseの同梱のJDKを使用したりする場合）や生成物を別の環境に持っていって動かしたい場合には注意しよう． -\-> -->
+<!-- 問題がおきた場合は，`build.xml`の`javac`要素の属性としてたとえば`release=8`などのように，実行先のJREが対応するJavaのバージョンを明示的に指定するようにすればよい． -->
+<!-- 例を挙げると，教育用計算機環境のJava実行環境のバージョンは以下である． -->
+<!-- ``` -->
+<!-- [exec701@eiw01 ~]$ java -version -->
+<!-- java version "1.8.0_202" -->
+<!-- Java(TM) SE Runtime Environment (build 1.8.0_202-b08) -->
+<!-- Java HotSpot(TM) 64-Bit Server VM (build 25.202-b08, mixed mode) -->
+<!-- ``` -->
+<!-- なので，もし手元で作成したjarファイルを教育用計算機環境に持っていた場合には，おそらくビルド時に`release=8`（あるいは`release=7`）を指定しなければ実行できないことになる（1.8というのはJava 8のことである）. -->
+</section>
+</body>
+</html>

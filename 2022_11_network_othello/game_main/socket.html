@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ソケットプログラミングについての簡単な説明</title>
+  <link rel="stylesheet" href="c7.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">ソケットプログラミングについての簡単な説明</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#クライアント" id="toc-クライアント">クライアント</a></li>
+<li><a href="#サーバ" id="toc-サーバ">サーバ</a></li>
+</ul>
+</nav>
+<section class="main">
+<p id="last_updated">
+最終更新：平成29年9月23日(土)
+</p>
+<p id="author">
+文責：松田 一孝
+</p>
+<ul id="LINKS">
+<li>
+<a href="./index.html">実験要領</a>
+</li>
+<li>
+<a href="./setup.html">環境の準備</a>
+</li>
+<li>
+<a
+href="./connection_via_ssh_forwarding.html">教育用計算機を介した通信</a>
+</li>
+<li class="current">
+<a href="./socket.html">ソケットプログラミング</a>
+</li>
+<li>
+<a href="./protocol.html">“リバーシの手”プロトコル</a>
+</li>
+</ul>
+<p>さて，TCP/IPを通信のプログラミングであるが，Unix等の多くのシステムでは<em>ソケット</em>と呼ばれる抽象概念を利用することで行う．Cでは（ライブラリを使わなければ）ソケットの操作はシステムコールを通じて行う．JavaやSML等の高級言語でもソケットは利用されており，多少「きれいに」ラッピングされてはいるものの，主なプログラミングの流れはCと同様である．</p>
+<p>ソケットは<code>socket(2)</code>システムコールにより作成する．<code>man 2 socket</code>をし
+てみると”SYNOPSIS”のところに</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/socket.h&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>socket<span class="op">(</span><span class="dt">int</span> domain<span class="op">,</span> <span class="dt">int</span> type<span class="op">,</span> <span class="dt">int</span> protocol<span class="op">);</span></span></code></pre></div>
+<p>とあるのがわかるだろう．<code>domain</code>は今回は<code>PF_INET</code>（IPv4）か<code>PF_INET6</code>（IPv6），<code>type</code>は<code>SOCK_STREAM</code>（TCP），<code>protocol</code>はIP通信が目的ならば<code>0</code>を指定すればよい．<code>#include</code>の行は，システムコール<code>socket</code>を利用するには<code>sys/socket.h</code>をインクルードする必要があることを示している．返り値は成否で<code>0</code>が成功である．詳細は<code>man 2 socket</code>を読んでほしい．</p>
+<p>その後の流れはクライアントプログラム（接続する側）とサーバプログラム（接続を待ち受ける側）で異なる．</p>
+<h2 id="クライアント">クライアント</h2>
+<p>ソケットを作成した段階では，それがどのようなプロトコルで利用されるか（ここでは，TCP/IPv4かTCP/IPv6）を指定したのみで，どこと接続するのかの情報はソケットと関連付けられてはいない．実際にサーバと接続するのは<code>connect(2)</code>システムコールを利用する．<code>man 2 connect</code>とすると</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/types.h&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/socket.h&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>connect<span class="op">(</span><span class="dt">int</span> socket<span class="op">,</span> <span class="dt">const</span> <span class="kw">struct</span> sockaddr <span class="op">*</span>address<span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    socklen_t address_len<span class="op">);</span>      </span></code></pre></div>
+<p>が得られる．<code>socket</code>はどのソケットを利用して接続するのかを示すことになる．<code>sockaddr</code>型のポインタ<code>address</code>であるが，実際にはIPv4の場合は<code>struct sockaddr_in</code>型のポインタを，IPv6の場合は<code>struct sockaddr_in6</code>型のポインタをキャストして渡すことになる．<code>address_len</code>は実際に<code>address</code>が指している構造体のサイズである．<code>sizeof (struct sockaddr_in)</code>等をすればよい．返り値は成否で<code>0</code>が成功である．詳しくは<code>man 2 connect</code>を参照のこと．</p>
+<p>さて，では次の目標は，IPv4ならば<code>sockaddr_in</code>構造体を，
+IPv6ならば<code>sockaddr_in6</code>構造体を作成することである．
+たとえば，Mac OS
+Xでは<code>sockaddr_in</code>構造体は<code>netinet/in.h</code>にて</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>        <span class="dt">short</span>   sin_family<span class="op">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        u_short sin_port<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">struct</span>  in_addr sin_addr<span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">char</span>    sin_zero<span class="op">[</span><span class="dv">8</span><span class="op">];</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>と定義されている．<code>sin_family</code>は<code>AF_INET</code>を指定する．指定するのが決まっているのになぜそういうフィールドがあるのかというのは，<code>connect</code>が区別するためである．<code>sin_port</code>は接続するポート，<code>sin_addr</code>は接続するIPアドレスである．ポート番号はネットワークバイトオーダで指定する必要がある．そのための変換には<code>htons</code>を利用する．また，<code>struct in_addr</code>型の構造体を作成するには<code>inet_aton</code>等を用いる．<code>inet_aton</code>の返り値は成否であるが，こちらは<code>1</code>が成功である．</p>
+<p>よって，たとえば<code>127.0.0.1</code>の<code>52395</code>ポートに
+ソケットを使って接続するまで流れは：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> sock <span class="op">=</span> socket<span class="op">(</span> PF_INET<span class="op">,</span> SOCK_STREAM<span class="op">,</span> <span class="dv">0</span> <span class="op">);</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in addr<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>memset<span class="op">(</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">);</span> <span class="co">// フィールドを0クリア</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_family <span class="op">=</span> AF_INET<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_port   <span class="op">=</span> htons<span class="op">(</span> <span class="dv">52395</span> <span class="op">);</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> inet_aton<span class="op">(</span><span class="st">&quot;127.0.0.1&quot;</span><span class="op">,</span> <span class="op">&amp;(</span>addr<span class="op">.</span>sin_addr<span class="op">)</span> <span class="op">)</span> <span class="op">!=</span> <span class="dv">1</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー処理</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> connect<span class="op">(</span> sock<span class="op">,</span> <span class="op">(</span><span class="kw">struct</span> sockaddr_in<span class="op">*)</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー処理</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>となる．あとはsockをファイル記述子として，<code>read</code>/<code>recv</code>や<code>write</code>/<code>send</code>をして最後に<code>close</code>すればよい．あるいは，<code>getline</code>等が利用したければ，<code>fdopen</code>をしてファイル記述子をファイルポインタに変換してもよいだろう．</p>
+<p>ここで<code>write</code>/<code>send</code>したときに，実際にパケットを送信するのはOSの役目である．これらはOSの送信キューにデータを追加する．なので，OSのキューがいっぱいであればブロックするし，ある程度以上大きなデータを一度に送ることはできない（<code>man</code>参照）．また，送信しようとしたデータの一部のみがキューに追加されることもありうる．1回の<code>write</code>/<code>send</code>に対応して1個のパケットが送信されるとは限らない．OSは近い時間に起きる<code>write</code>/<code>send</code>をまとめてパケットにするかもしれないし，大きなデータを複数のパケットに分割するかもしれない．</p>
+<p>上記は<code>read</code>/<code>recv</code>についても同様である．実際にパケットを受信するのはOSで役割であり，これらはOSの受信キューからデータを取ってくるだけである．なので，OSのキューが空ならばブロックするし，一度読める量は引数に指定した量よりも少ないかもしれない．</p>
+<p>さて，上記の流れはとても面倒だ．まず，IPv4とIPv6とで手順が異なる．その上に<code>localhost</code>や<code>ecei.tohoku.ac.jp</code>といった「ファンシーな」名前を利用して接続することもできない．そのため，実際には<code>getaddrinfo</code>を使うとよい．この関数を用いることで，<code>connect</code>の引数を準備するという様々な煩わしさから解法される上に，IPv4とIPv6の違いの大部分も吸収してくれる．<code>man getaddrinfo</code>がとてもよく記述されているので，あえてここで詳細を述べる必要もなかろう．配布のサンプルプログラムは<code>getaddrinfo</code>を利用しているので，そちらも参考にするとよい．</p>
+<h2 id="サーバ">サーバ</h2>
+<p>次に待ち受け側をソケットを利用してどうプログラムするかについて述べる．</p>
+<p>サーバはまず，どのポートからの接続を待ち受けるかを指定する．
+これには，<code>bind</code>システムコールを用いる．<code>man 2 bind</code>には</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;sys/socket.h&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>bind<span class="op">(</span><span class="dt">int</span> socket<span class="op">,</span> <span class="dt">const</span> <span class="kw">struct</span> sockaddr <span class="op">*</span>address<span class="op">,</span> socklen_t address_len<span class="op">);</span></span></code></pre></div>
+<p>とある．ここでも我々は<code>sockaddr</code>構造体へのポインタを用意しなければなら
+ないのだ（ため息）．ただし，通常サーバはどのIPアドレスからの接続も受け
+つけたいので，INADDR_ANYを利用する．</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> sock <span class="op">=</span> socket<span class="op">(</span> PF_INET<span class="op">,</span> SOCK_STREAM<span class="op">,</span> <span class="dv">0</span> <span class="op">);</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in addr<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>memset<span class="op">(</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">);</span> <span class="co">// フィールドを0クリア</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_family <span class="op">=</span> AF_INET<span class="op">;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_port   <span class="op">=</span> htons<span class="op">(</span> <span class="dv">52395</span> <span class="op">);</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_addr<span class="op">.</span>s_addr <span class="op">=</span> htonl<span class="op">(</span> INADDR_ANY <span class="op">);</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> bind<span class="op">(</span> sock<span class="op">,</span> <span class="op">(</span><span class="kw">struct</span> sockaddr_in<span class="op">*)</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー処理</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>さて，<code>bind</code>しただけだと，「どこからの接続を待ち受ける」かを指定しただけで，まだ待ち受けは開始してはいない．実際に待ち受けを開始するには<code>listen</code>を利用する．<code>man 2 listen</code>を見ると</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>listen<span class="op">(</span><span class="dt">int</span> socket<span class="op">,</span> <span class="dt">int</span> backlog<span class="op">);</span></span></code></pre></div>
+<p>とある．<code>socket</code>は<code>bind</code>が終わったソケットである．<code>backlog</code>はOS側が用意する待ち受けキューの大きさである．<code>listen</code>後，サーバは<code>accept</code>で接続をデキューし通信を行うことになるが，<code>backlog</code>は何個の接続が<code>accept</code>待ちになれるかを表している．サーバ側のキューがいっぱいだと，クライアントは「接続できない」ことになる．返り値は成否で<code>0</code>が成功である．</p>
+<p>さて，接続待ち状態になったわけだが，サーバプログラムは接続がきたかどうかをOSに確認しに行く必要がある．そのためのシステムコールが<code>accept</code>である．<code>man 2 accept</code>
+を見ると</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>accept<span class="op">(</span><span class="dt">int</span> socket<span class="op">,</span> <span class="kw">struct</span> sockaddr <span class="op">*</span><span class="dt">restrict</span> address<span class="op">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    socklen_t <span class="op">*</span><span class="dt">restrict</span> address_len<span class="op">);</span></span></code></pre></div>
+<p>となっている．<code>socket</code>は<code>bind</code>が終わったあとに<code>listen</code>も終えたソケットである．
+<code>address</code>や<code>address_len</code>はこちらが準備したこれまでと違い<code>accept</code>が返す，接続相手の情報である．相手のIPアドレス等の情報が気にならなければ，<code>NULL</code>でもよい．返り値は接続相手との通信を行うためのファイル記述子で，<code>-1</code>が失敗である．相手との通信自体はこのファイル記述子さえがあれば可能である．</p>
+<p>ところでデバッグの段階では，サーバが異常終了したりすることはよくあるだろう．また，Ctrl+Cでサーバの実行を止めたいと思うことも多いだろう．その場合にTCPの仕様では，その（IPと）ポートがしばらく（数分ほど）使用できなくなってしまう．これは，サーバプログラムでは避けたい挙動である．回避するためには，<code>bind</code>前に<code>setsockopt</code>システムコールを利用して，<code>SO_REUSEADDR</code>を<code>1</code>に設定する．具体的には，</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> enabled <span class="op">=</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> setsockopt<span class="op">(</span> sock<span class="op">,</span> SOL_SOCKET<span class="op">,</span> SO_REUSEADDR<span class="op">,</span> <span class="op">&amp;</span>enabled<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー時の処理．</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>のようにする．</p>
+<p>まとめると，たとえば<code>52395</code>ポートを待ち受けるサーバプログラムの主な流れは
+以下のようになる．</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> sock <span class="op">=</span> socket<span class="op">(</span> PF_INET<span class="op">,</span> SOCK_STREAM<span class="op">,</span> <span class="dv">0</span> <span class="op">);</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> sockaddr_in addr<span class="op">;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>memset<span class="op">(</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">);</span> <span class="co">// フィールドを0クリア</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_family <span class="op">=</span> AF_INET<span class="op">;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_port   <span class="op">=</span> htons<span class="op">(</span> <span class="dv">52395</span> <span class="op">);</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>addr<span class="op">.</span>sin_addr<span class="op">.</span>s_addr <span class="op">=</span> htonl<span class="op">(</span> INADDR_ANY <span class="op">);</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> enabled <span class="op">=</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> setsockopt<span class="op">(</span> sock<span class="op">,</span> SOL_SOCKET<span class="op">,</span> SO_REUSEADDR<span class="op">,</span> <span class="op">&amp;</span>enabled<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー処理</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span> bind<span class="op">(</span> sock<span class="op">,</span> <span class="op">(</span><span class="kw">struct</span> sockaddr_in<span class="op">*)</span> <span class="op">&amp;</span>addr<span class="op">,</span> <span class="kw">sizeof</span><span class="op">(</span>addr<span class="op">)</span> <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// エラー処理</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">// 待ち受け開始</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>listen<span class="op">(</span> sock<span class="op">,</span> <span class="dv">5</span> <span class="op">);</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="op">(</span> <span class="dv">1</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">struct</span> sockaddr_storage ad<span class="op">;</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span>                     ad_len<span class="op">;</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> conn <span class="op">=</span> accept<span class="op">(</span> sock<span class="op">,</span> <span class="op">(</span><span class="kw">struct</span> sockaddr<span class="op">*)</span> <span class="op">&amp;</span>ad<span class="op">,</span> <span class="op">&amp;</span>ad_len <span class="op">);</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span> conn <span class="op">&gt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        <span class="co">// connに対するreadやwrite</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>        close<span class="op">(</span> conn <span class="op">);</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span> sock <span class="op">);</span></span></code></pre></div>
+<p>クライアントのときと同様にサーバ用のソケットを利用するのにも<code>getaddrinfo</code>を利用可能である．<code>man getaddrinfo</code>およびサンプルプログラムを参照のこと．</p>
+<h4 id="並行処理">並行処理</h4>
+<p>上記のコードはまだまだ満足の行くものではない．具体的な問題点のひとつは，ひとつの相手のとの通信を行っている間は，他の相手との通信を行うことができない．そのため，他のクライアントは接続後にそれまでの接続相手との通信が終了するまで待たされることになる．</p>
+<p>今回のリバーシの対戦程度の処理ならば，相手は一人だけでもよいかもしれない．しかし，AIにプレイさせたりすることを考えると同時に他プレイヤーとの対戦を処理できたほうが便利である．他の人がAIに次の手を伺ってる最中に，君がAIに次の手を聞けないのは不便であろう．</p>
+<p>Cで並行処理を実現するひとつの手法はPOSIXスレッド（pthread）を用いることである．今回の目的では，<code>pthread_create</code>と<code>pthread_detach</code>，そして必要に応じて<code>pthread_create</code>を使うことになるだろう．<code>man pthread_create</code>等によると</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>pthread_create<span class="op">(</span>pthread_t <span class="op">*</span><span class="dt">restrict</span> thread<span class="op">,</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">const</span> pthread_attr_t <span class="op">*</span><span class="dt">restrict</span> attr<span class="op">,</span> <span class="dt">void</span> <span class="op">*(*</span>start_routine<span class="op">)(</span><span class="dt">void</span> <span class="op">*),</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">void</span> <span class="op">*</span><span class="dt">restrict</span> arg<span class="op">);</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>pthread_detach<span class="op">(</span>pthread_t thread<span class="op">);</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>pthread_exit<span class="op">(</span><span class="dt">void</span> <span class="op">*</span>value_ptr<span class="op">);</span></span></code></pre></div>
+<p>とある．<code>pthread_create</code>はその名の通りスレッドを作成する．<code>pthread_create</code>は，スレッドの計算結果を親スレッドに返す必要がないときに，そのスレッドが終了したらスレッドを破棄してよいことを指示する（その結果<code>pthread_join</code>で終了を待って，計算結果を取り出したりできなくなる）．<code>pthread_exit</code>はそのスレッドを正常に終了するに使う．<code>value_ptr</code>はそのスレッドの「計算結果」を表していて，<code>pthread_join</code>することで取り出せるが，<code>pthread_detach</code>されるようなスレッドだと<code>NULL</code>を渡したので十分である．</p>
+<p><code>pthread_create</code>の引数には，<code>void *(*start_routine)(void *)</code>という関数ポインタと
+その関数に与える初期値<code>arg</code>を取るようになっている．</p>
+<p>たとえば上記のサーバだと</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span><span class="op">*</span> worker<span class="op">(</span> <span class="dt">void</span><span class="op">*</span> pconn <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> conn <span class="op">=</span> <span class="op">*(</span><span class="dt">int</span> <span class="op">*)</span> pconn<span class="op">;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    free<span class="op">(</span>pconn<span class="op">);</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// connに対するreadやwrite</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    close<span class="op">(</span> conn <span class="op">);</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>という<code>worker</code>関数を準備してwhileループの部分を</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="op">(</span> <span class="dv">1</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">struct</span> sockaddr_storage ad<span class="op">;</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span>                     ad_len<span class="op">;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> conn <span class="op">=</span> accept<span class="op">(</span> sock<span class="op">,</span> <span class="op">(</span><span class="kw">struct</span> sockaddr<span class="op">*)</span> <span class="op">&amp;</span>ad<span class="op">,</span> <span class="op">&amp;</span>ad_len <span class="op">);</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span> conn <span class="op">&gt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">int</span><span class="op">*</span> pconn <span class="op">=</span> <span class="op">(</span><span class="dt">int</span><span class="op">*)</span> malloc<span class="op">(</span> <span class="kw">sizeof</span><span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="op">);</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span>pconn <span class="op">=</span> conn<span class="op">;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        pthread_t tid<span class="op">;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(</span> pthread_create<span class="op">(</span> <span class="op">&amp;</span>tid<span class="op">,</span> NULL<span class="op">,</span> worker<span class="op">,</span> pconn <span class="op">)</span> <span class="op">&lt;</span> <span class="dv">0</span> <span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>           free<span class="op">(</span> pconn <span class="op">);</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>           <span class="co">// スレッド生成失敗時の処理</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        pthread_detach<span class="op">(</span> tid <span class="op">);</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>close<span class="op">(</span> sock <span class="op">);</span></span></code></pre></div>
+<p>とすればよい．なお，<code>pthread_create</code>の第4引数は<code>malloc</code>したポインタを渡すのがよい．というのも，そもそも<code>conn</code>のアドレス自体whileループの実行によって有効でなくなる可能性があり，また現実的には同じであったとしてもそのアドレスの値はこのwhileループの実行によって変わりうるためである．</p>
+</section>
+</body>
+</html>
