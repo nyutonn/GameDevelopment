@@ -20,9 +20,10 @@
 * 2022.12-2023.1
 * 約1ヶ月
 
+<img src="/assets/img/rhythm1_プレイ画像1.jpg" width="300x300">
+
 ### 使用言語・ツール
 * ハードウェア: ラズベリーパイ (Raspberry Pi)
-    <img src="/assets/img/rhythm1_プレイ画像1.jpg" width="300x300">
 * 言語: Python
 * OS: Windows OS
 * ターミナル: Windows Terminal

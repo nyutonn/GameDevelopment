@@ -25,4 +25,3 @@
 * 言語: Haskell
 * OS: Ubuntu on Windows PC
 * エディター: Emacs
-* 
