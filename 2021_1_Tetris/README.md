@@ -1,37 +1,3 @@
-<style>
-  .no-bullet {
-    list-style-type: none;
-    padding: 0;
-  }
-  .no-bullet li {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .no-bullet video, .no-bullet img {
-    margin-right: 10px;
-  }
-</style>
-
-<!-- 箇条書きを横に表示するクラス -->
-<!-- 使用する先頭に <ul class="horizontal-list"><li> -->
-<style>
-  .horizontal-list {
-    display: flex;
-    padding: 0;
-    list-style-type: none;
-  }
-  .horizontal-list li {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-right: 20px;
-  }
-  .horizontal-list video, .horizontal-list img {
-    margin-bottom: 10px;
-  }
-</style>
-
 ## GUIテトリス
 <img src="/2021_1_Tetris/game_pictures/タイトル画面.png" width="400x400">
 
