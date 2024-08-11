@@ -15,6 +15,7 @@
     </li></ul>
 * 初めてのゲーム開発経験
 * ゲームプログラムは[GitHub](https://github.com/nyutonn/GameDevelopment/blob/main/2021_1_Tetris/game_main/tetris_run.hs)にて公開
+* ゲームのプレイ動画は[ポートフォリオ](https://nyutonn.github.io/2023-12-21-Personal_Game_Development_Portfolio-copy/)にて公開
 
 ### 開発期間
 * 2020.10-2020.12
@@ -24,30 +25,4 @@
 * 言語: Haskell
 * OS: Ubuntu on Windows PC
 * エディター: Emacs
-
-### プレイ動画
-<li>フリーモード
-    <video width="300" controls>
-    <source src="/2021_1_Tetris/game_play_captures/0_free_game.mp4" type="video/mp4">
-    </video>
-</li>
-<li>オートドロップモード
-    <video width="300" controls>
-    <source src="/2021_1_Tetris/game_play_captures/1_auto_dtop.mp4" type="video/mp4">
-    </video>
-</li>
-<li>テトリミノ選択モード
-    <video width="300" controls>
-    <source src="/2021_1_Tetris/game_play_captures/2_select_tetrimino.mp4" type="video/mp4">
-    </video>
-</li>
-<li>10000スコアモード
-    <video width="300" controls style="margin-right: 10px;">
-    <source src="/2021_1_Tetris/game_play_captures/3_10000score_challenge.mp4" type="video/mp4">
-    </video>
-</li>
-<li>スペシャルモード
-    <video width="300" controls>
-    <source src="/2021_1_Tetris/game_play_captures/4_special_mode.mp4" type="video/mp4">
-    </video>
-</li>
+* 
